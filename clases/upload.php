@@ -1,10 +1,6 @@
 <?php
 
 class upload{
-    /*const POLICY_KEEP = 1,
-            POLICY_OVERWRITE = 2,
-            POLICY_RENAME = 3,
-            MIN_OWN_ERROR = 1000;*/
 
     private $error = 0,
             $file,
@@ -64,12 +60,6 @@ class upload{
         return $this;
     }
 
-    /*function setPolicy($policy) {
-        if(is_int($policy) && $policy >= self::POLICY_KEEP && $policy <= self::POLICY_RENAME) {
-            $this->policy = $policy;
-        }
-        return $this;
-    }*/
 
     function setTarget($target) {
         if(is_string($target) && trim($target) !== '') {
