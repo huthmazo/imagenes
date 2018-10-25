@@ -1,33 +1,102 @@
 <?php
 
 class upload{
+    const   POLICY_KEEP = 1,
+            POLICY_OVERWRITE = 2,
+            POLICY_RENAME = 3,
+            MIN_OWN_ERROR = 1000;
 
     private $error = 0,
             $file,
             $input,
             $maxSize = 0,
             $name,
-            //$policy = self::POLICY_OVERWRITE,
+            $policy = self::POLICY_OVERWRITE,
             $savedName = '',
-            $target = './',
+            $target = '/home/ubuntu/imagenes/',
             $type = '';
 
     function __construct($input) {
         
         $this->input = $input;
-        //echo '<pre>' . var_export($input) .'</pre>';
-        //echo $input['name'][0]; echo '<br>';
-        for ($i = 0; $i < count($_FILES['file']['name']); $i++) {
-              if(isset($input) && $input['error'][$i] === 0 && $input['name'][$i] != '') {
-                $this->file = $input;
-                $this->name = $this->file['name'][$i];
-                self::upload($i);
-                } else {
-                    $this->error = 1;
-                }
+        if ($input['name'][0] != '') {
+            
+            for ($i = 0; $i < count($_FILES['file']['name']); $i++) {
+                
+                  if(isset($input) && $input['error'][$i] === 0 && $input['name'][$i] != '') {
+                      echo 'const';
+                    $this->file = $input;
+                    $this->name = $this->file['name'][$i];
+                    echo 'sadnsoaiud';
+                    self::upload($i);
+                    } 
+            }
         }
-       
+        else {
+            $this->error = 1;
+            self::upload(0);
+        }
                
+    }
+    
+    private function __doUpload($i) {
+        $result = false;
+        switch($this->policy) {
+            case self::POLICY_KEEP:
+                $result = $this->__doUploadKeep($i);
+                break;
+            case self::POLICY_OVERWRITE:
+                $result = $this->__doUploadOverwrite($i);
+                break;
+            case self::POLICY_RENAME:
+                $result = $this->__doUploadRename($i);
+                break;
+        }
+        if(!$result && $this->error === 0){
+            $this->error = 4;
+        }
+        return $result;
+    }
+    
+    private function __doUploadKeep($i) {
+        $result = false;
+        if(file_exists($this->target . $this->name) === false) {
+            $result = move_uploaded_file($this->file['tmp_name'][$i], $this->target . $this->name);
+        } else {
+            $this->error = 3;
+        }
+        return $result;
+    }
+    
+    private function __doUploadOverwrite($i) {
+        return move_uploaded_file($this->file['tmp_name'][$i], $this->target . $this->name);
+    }
+    
+    private function __doUploadRename($i) {
+        $newName = $this->target . $this->name;
+        if(file_exists($newName)) {
+            $newName = self::__getValidName($newName);
+        }
+        $result = move_uploaded_file($this->file['tmp_name'][$i], $newName);
+        if($result) {
+            $nombre = pathinfo($newName);
+            $nombre = $nombre['basename'];
+            $this->savedName = $nombre;
+        }
+        return $result;
+    }
+    
+    private static function __getValidName($file) {
+        $parts = pathinfo($file);
+        $extension = '';
+        if(isset($parts['extension'])) {
+            $extension = '.' . $parts['extension'];
+        }
+        $cont = 0;
+        while(file_exists($parts['dirname'] . '/' . $parts['filename'] . $cont . $extension)) {
+            $cont++;
+        }
+        return $parts['dirname'] . '/' . $parts['filename'] . $cont . $extension;
     }
     
 
@@ -60,6 +129,12 @@ class upload{
         return $this;
     }
 
+    function setPolicy($policy) {
+        if(is_int($policy) && $policy >= self::POLICY_KEEP && $policy <= self::POLICY_RENAME) {
+            $this->policy = $policy;
+        }
+        return $this;
+    }
 
     function setTarget($target) {
         if(is_string($target) && trim($target) !== '') {
@@ -77,10 +152,29 @@ class upload{
 
     function upload($i) {
         if ($this->file['size'][$i] >0) {
-            move_uploaded_file($this->file['tmp_name'][$i], $this->target . $this->name);
+            SELF::__doUpload($i);
+            echo'todo bien';
         }
         else{
-            echo 'El fichero no existe o está vacio';
+            switch($this->error){
+                case 1:
+                    echo 'objeto mal construido , no existe o está vacio';
+                    break;
+                case 2:
+                    echo 'objeto mal construido';
+                    break;
+                case 3:
+                    echo 'UPLOAD KEEP ERROR';
+                    break;
+                case 4:
+                    echo 'DO UPLOAD ERROR';
+                    break;
+                default:
+                    echo 'El fichero no existe o está vacio';
+                    break;
+                    
+            }
+            
         }
        
     }
